@@ -8,9 +8,11 @@ class ShippyproShipment
 {
     protected $from_address, $to_address, $parcels;
     protected $Insurance = 0, $InsuranceCurrency = "EUR", $CashOnDelivery = 0, $CashOnDeliveryCurrency="EUR", $ContentDescription, $TotalValue, $ShippingService = "Standard", $RateCarriers;
-
+    protected $TransactionID, $CarrierName, $CarrierService, $CarrierID, $OrderID, $RateID;
+    protected $client;
     public function __construct(float $TotalValue, $ContentDescription)
     {
+        $this->client = new ShippyProClient();
         $this->TotalValue = $TotalValue;
         $this->ContentDescription = $ContentDescription;
         $this->parcels = collect();
@@ -40,9 +42,26 @@ class ShippyproShipment
         $this->CashOnDeliveryCurrency = $currency;
         return $this;
     }
-    public function getRate(){
-        $client = new ShippyProClient('MRJlNDNmYzU1OGM5MjBiM2Q5MzYzZjkyOGFiMzdmNDE6');
-        return $client->rates($this);
+    public function setTransactionId($id){
+        $this->TransactionID = 'ORDER'.$id;
+        $this->OrderID = 'ORDER'.$id;
+    }
+    public function setRate(ShippyproRate $rate){
+        $this->CarrierName = $rate->carrier;
+        $this->CarrierService = $rate->service;
+        $this->CarrierID = $rate->carrier_id;
+        $this->RateID = $rate->rate_id;
+    }
+    public function purchase(){
+        return $this->client->ship($this);
+    }
+    public function getRates() : Collection{
+        $rates = $this->client->rates($this);
+        $rates_collection = collect()->whereInstanceOf(ShippyproRate::class);
+        foreach ($rates->Rates as $r){
+            $rates_collection->push(new ShippyproRate($r));
+        }
+        return $rates_collection;
     }
     public function parcelsToArray() : array{
         $array = array();
@@ -51,18 +70,25 @@ class ShippyproShipment
         }
         return $array;
     }
+
     public function toArray() : array {
         return [
             'from_address' => $this->from_address->toArray(),
             'to_address' => $this->to_address->toArray(),
-            'parcel' => $this->parcelsToArray(),
+            'parcels' => $this->parcelsToArray(),
             'Insurance' => $this->Insurance,
             'InsuranceCurrency' => $this->InsuranceCurrency,
             'CashOnDelivery' => $this->CashOnDelivery,
             'CashOnDeliveryCurrency' => $this->CashOnDeliveryCurrency,
             'ContentDescription' => $this->ContentDescription,
-            'TotalValue' => $this->TotalValue,
-            'ShippingService' => $this->ShippingService
+            'TotalValue' => (string) $this->TotalValue,
+            'ShippingService' => $this->ShippingService,
+            'transactionID' => ($this->TransactionID) ? $this->TransactionID : null,
+            'CarrierName' => ($this->CarrierName) ? $this->CarrierName : null,
+            'CarrierService' => ($this->CarrierService) ? $this->CarrierService : null,
+            'CarrierID' => ($this->CarrierID) ? $this->CarrierID : null,
+            'OrderID' => ($this->OrderID) ? $this->OrderID : null,
+            'RateID' => ($this->RateID) ? $this->RateID : null,
         ];
     }
 }

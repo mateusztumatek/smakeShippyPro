@@ -8,15 +8,15 @@ class ShippyProRequest{
     protected $api_key, $headers;
     private $endpoint = 'https://www.shippypro.com/api';
     /*private $endpoint = 'http://127.0.0.1:8002/api/test';*/
-    public function __construct($api_key)
+    public function __construct()
     {
-        $this->api_key = $api_key;
+        $this->api_key = config('shippyClient.api_key');
         $this->setHeaders();
     }
 
     public function call(array $fields, $method){
-        $client = new Client();
-        $response = $client->request('POST', $this->endpoint, array_merge($fields, [$method]), $this->headers->toArray());
+        $client = new Client(['headers' => $this->headers]);
+        $response = $client->request('POST', $this->endpoint, ['json' => array_merge(['Params' => $fields], ['Method' => $method])]);
         try{
             return json_decode($response->getBody()->getContents());
         }catch (\Exception $e){
@@ -24,7 +24,10 @@ class ShippyProRequest{
         }
     }
     protected function setHeaders(){
-        $this->headers = collect();
-        $this->headers->push(['Authorization' => 'Basic '.$this->api_key]);
+        $key = base64_encode ($this->api_key.':');
+        $this->headers = array(
+            'Content-Type' => "application/json",
+            'Authorization' => "Basic ".$key
+        );
     }
 }

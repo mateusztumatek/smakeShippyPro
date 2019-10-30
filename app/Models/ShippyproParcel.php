@@ -13,10 +13,10 @@ class ShippyproParcel{
     }
     public function toArray(){
         return [
-            'length' => $this->length,
-            'width' => $this->width,
-            'height' => $this->height,
-            'weight' => $this->weight
+            'length' => (integer) number_format($this->length, 0),
+            'width' => (integer) number_format($this->width, 0),
+            'height' => (integer) number_format($this->height, 0),
+            'weight' => (integer) number_format($this->weight, 0)
         ];
     }
 }
